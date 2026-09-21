@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SyncTroller</string>
+    <string name="title_activity_main">SyncTroller</string>
+    <string name="package_name">com.seanmackay.synctroller</string>
+    <string name="custom_url_scheme">com.seanmackay.synctroller</string>
+</resources>

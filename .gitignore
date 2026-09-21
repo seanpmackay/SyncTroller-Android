@@ -1,0 +1,7 @@
+node_modules/
+*.log
+
+# Capacitor copies www/ here on every `cap sync` -- generated, not source
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json

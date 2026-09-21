@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>SyncTroller</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="android.css" />
+</head>
+<body>
+
+  <div class="titlebar">
+    <div class="titlebar-drag">
+      <!-- Redundant on Android -- the app name already shows in the task
+           switcher/launcher; this was only needed on desktop as a label
+           for the frameless window's drag region. -->
+      <span class="titlebar-title" style="display:none">SyncTroller</span>
+    </div>
+    <div class="titlebar-buttons">
+      <button id="btn-settings" class="titlebar-btn" title="Settings">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58ZM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6Z"/></svg>
+      </button>
+      <!-- No frameless-window chrome on Android -- kept in the DOM (just
+           hidden) rather than removed, so renderer.js (copied verbatim
+           from the desktop app) can bind its click handlers to these IDs
+           without needing any changes for this platform. -->
+      <button id="btn-minimize" class="titlebar-btn" title="Minimize" style="display:none">
+        <svg viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg>
+      </button>
+      <button id="btn-close" class="titlebar-btn titlebar-btn-close" title="Close" style="display:none">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <main id="app">
+
+    <!-- PAIRING VIEW -->
+    <section id="view-pairing" class="view">
+      <div class="pairing-wrap">
+        <div class="pairing-logo"><div class="sync-ring"><div class="sync-dot"></div></div></div>
+        <h1>Connect your Sync Box</h1>
+        <p class="muted" id="pairing-status">Searching your network…</p>
+        <div id="pairing-list" class="pairing-list"></div>
+        <button id="btn-rescan" class="btn btn-ghost">Scan again</button>
+        <div class="pairing-manual">
+          <p class="muted small">Not found? Enter its IP address directly:</p>
+          <div class="row">
+            <input id="manual-ip" type="text" placeholder="192.168.1.117" />
+            <button id="btn-manual-connect" class="btn">Connect</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRESS BUTTON VIEW -->
+    <section id="view-presslink" class="view">
+      <div class="settings-header">
+        <button id="btn-cancel-pair" class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <h2>Press the button</h2>
+      </div>
+      <div class="pairing-wrap">
+        <div class="pairing-logo pulse"><div class="sync-ring"><div class="sync-dot"></div></div></div>
+        <h1>Press and hold the button on your Sync Box</h1>
+        <p class="muted">Hold the button on top of the device for a few seconds, until its light blinks green.</p>
+        <p class="muted small" id="presslink-status">Waiting for button press…</p>
+        <p class="muted small" id="presslink-error"></p>
+      </div>
+    </section>
+
+    <!-- MAIN CONTROL VIEW -->
+    <section id="view-main" class="view">
+      <div class="input-tile" id="input-tile">
+        <!-- A soft, slowly-rotating blur of the actual Hue bulbs' current
+             colors while syncing (android-ui.js polls the Bridge and sets
+             --ambient-c0.."3"), behind the icon -- see android.css. -->
+        <div class="input-tile-ambient" id="input-tile-ambient"></div>
+        <div class="input-tile-icon" id="input-tile-icon"></div>
+      </div>
+
+      <div class="device-label">
+        <div class="device-label-name" id="device-name">Sync Box</div>
+        <div class="device-label-status" id="device-status">Ready</div>
+      </div>
+
+      <div class="control-row">
+        <button class="control-pill" id="pill-mode">
+          <span class="control-pill-label">MODE</span>
+          <span class="control-pill-value" id="mode-icon"></span>
+        </button>
+        <button class="control-pill" id="pill-intensity">
+          <span class="control-pill-label">INTENSITY</span>
+          <span class="control-pill-value" id="intensity-icon"></span>
+        </button>
+        <button class="control-pill" id="pill-brightness">
+          <span class="control-pill-label">BRIGHTNESS</span>
+          <span class="control-pill-value" id="brightness-icon"></span>
+        </button>
+      </div>
+
+      <div class="bottom-bar">
+        <button class="bottom-btn" id="btn-what">
+          <span class="bottom-btn-icon" id="what-icon"></span>
+          <span class="bottom-btn-label">WHAT</span>
+          <span class="bottom-btn-sub" id="what-sub">—</span>
+        </button>
+        <button class="sync-fab" id="sync-fab">
+          <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6V4Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <button class="bottom-btn" id="btn-where">
+          <span class="bottom-btn-icon" id="where-icon"></span>
+          <span class="bottom-btn-label">WHERE</span>
+          <span class="bottom-btn-sub" id="where-sub">—</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- SETTINGS VIEW -->
+    <section id="view-settings" class="view">
+      <div class="settings-header">
+        <button id="btn-settings-back" class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <h2>Settings</h2>
+      </div>
+
+      <!-- No system tray / launch-on-login concept on Android -- hidden
+           rather than removed, same reasoning as the titlebar buttons
+           above (renderer.js binds to these IDs unmodified). -->
+      <div class="settings-section" style="display:none">
+        <div class="settings-title">App behavior</div>
+        <label class="toggle-btn-row">
+          <input type="checkbox" class="tray-option" data-value="close-to-tray" />
+          <span class="toggle-btn">Close to system tray</span>
+        </label>
+        <label class="toggle-btn-row">
+          <input type="checkbox" class="tray-option" data-value="minimize-to-tray" />
+          <span class="toggle-btn">Minimize to system tray</span>
+        </label>
+        <label class="toggle-btn-row">
+          <input type="checkbox" id="launch-on-login-toggle" />
+          <span class="toggle-btn">Launch on login</span>
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">Inputs</div>
+        <p class="muted small" style="margin-top:0">Icon and name for each connected HDMI input</p>
+        <div id="settings-inputs-list" class="settings-item-list"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">Entertainment areas (WHERE)</div>
+        <p class="muted small" style="margin-top:0">Display icon and name used in this app -- the Sync Box doesn't support renaming these itself, so this is local to this app only.</p>
+        <div id="settings-groups-list" class="settings-item-list"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">Hue Bridge</div>
+        <div id="settings-bridges-list" class="settings-item-list" style="margin-bottom:8px"></div>
+        <button id="btn-pair-bridge" class="toggle-btn">Pair a Hue Bridge</button>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">Sync Box</div>
+        <div class="muted small" id="settings-box-info">—</div>
+        <button id="btn-forget-box" class="btn btn-danger">Forget this Sync Box</button>
+      </div>
+
+      <!-- About: always the very last thing on the settings screen -->
+      <button id="btn-about" class="settings-item-row about-row">
+        <span class="settings-item-icon-btn about-row-icon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5zM13.5 17h-3v-1.5h.75v-4h-.75V10h2.25v5.5h.75z"/></svg>
+        </span>
+        <span class="about-row-text">
+          <span class="about-row-title">About SyncTroller</span>
+          <span class="about-row-sub muted small">Version <span class="about-version">—</span></span>
+        </span>
+        <svg class="about-row-chevron" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </button>
+    </section>
+
+    <!-- ABOUT VIEW -->
+    <section id="view-about" class="view">
+      <div class="settings-header">
+        <button id="btn-about-back" class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <h2>About</h2>
+      </div>
+
+      <div class="about-hero">
+        <img class="about-hero-icon" src="../../assets/icon.png" alt="" draggable="false" />
+        <div class="about-hero-name">SyncTroller</div>
+        <div class="about-hero-version">Version <span class="about-version">—</span></div>
+        <p class="about-hero-tagline">A standalone controller for the Philips Hue Play HDMI Sync Box.</p>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">Developer</div>
+        <div class="about-dev">
+          <div class="about-dev-avatar" aria-hidden="true">SM</div>
+          <div class="about-dev-text">
+            <div class="about-dev-name">Sean MacKay</div>
+            <div class="muted small">Design &amp; development</div>
+          </div>
+        </div>
+        <button id="btn-about-linkedin" class="about-link-btn">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+          <span>Connect on LinkedIn</span>
+          <svg class="about-link-ext" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3zM5 5h5v2H5v12h12v-5h2v7H3V5h2z"/></svg>
+        </button>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">What's new</div>
+        <div id="about-changelog" class="about-changelog"></div>
+      </div>
+
+      <div class="about-footer">
+        <div>&copy; <span class="about-year">2026</span> Sean MacKay. All rights reserved.</div>
+        <div class="about-footer-legal">Philips Hue is a trademark of Signify Holding. This app is an independent project and is not affiliated with or endorsed by Signify.</div>
+      </div>
+    </section>
+
+    <!-- HUE BRIDGE PAIRING VIEW -->
+    <section id="view-bridge-pairing" class="view">
+      <div class="settings-header">
+        <button id="btn-bridge-pairing-back" class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <h2>Pair a Hue Bridge</h2>
+      </div>
+      <div class="pairing-wrap">
+        <div class="pairing-logo"><div class="sync-ring"><div class="sync-dot"></div></div></div>
+        <p class="muted" id="bridge-pairing-status">Searching your network…</p>
+        <div id="bridge-pairing-list" class="pairing-list"></div>
+        <button id="btn-bridge-rescan" class="btn btn-ghost">Scan again</button>
+        <div class="pairing-manual">
+          <p class="muted small">Not found? Enter its IP address directly:</p>
+          <div class="row">
+            <input id="bridge-manual-ip" type="text" placeholder="192.168.1.100" />
+            <button id="btn-bridge-manual-connect" class="btn">Connect</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HUE BRIDGE PRESS BUTTON VIEW -->
+    <section id="view-bridge-presslink" class="view">
+      <div class="settings-header">
+        <button id="btn-bridge-cancel-pair" class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <h2>Press the button</h2>
+      </div>
+      <div class="pairing-wrap">
+        <div class="pairing-logo pulse"><div class="sync-ring"><div class="sync-dot"></div></div></div>
+        <h1>Press the button on your Hue Bridge</h1>
+        <p class="muted">Press the large round button on top of the Bridge.</p>
+        <p class="muted small" id="bridge-presslink-status">Waiting for button press…</p>
+        <p class="muted small" id="bridge-presslink-error"></p>
+      </div>
+    </section>
+
+    <!-- HUE BRIDGE DETAIL VIEW -->
+    <section id="view-bridge-detail" class="view">
+      <div class="settings-header">
+        <button id="btn-bridge-detail-back" class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <h2 id="bridge-detail-title">Bridge</h2>
+      </div>
+      <p class="muted small" id="bridge-detail-ip" style="margin-top:0">—</p>
+      <button id="btn-bridge-detail-manage" class="toggle-btn">Manage entertainment areas</button>
+      <button id="btn-bridge-detail-forget" class="btn btn-danger" style="margin-top:8px">Forget this Bridge</button>
+    </section>
+
+    <!-- ENTERTAINMENT AREAS LIST VIEW -->
+    <section id="view-entareas" class="view">
+      <div class="settings-header">
+        <button id="btn-entareas-back" class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <h2>Entertainment areas</h2>
+        <button id="btn-entarea-new" class="icon-btn" style="margin-left:auto" title="New area">
+          <svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
+        </button>
+      </div>
+      <div id="entareas-list" class="settings-item-list"></div>
+      <p class="muted small" id="entareas-empty" style="display:none">No entertainment areas yet -- tap + to create one.</p>
+    </section>
+
+    <!-- ENTERTAINMENT AREA EDIT VIEW -->
+    <section id="view-entarea-edit" class="view">
+      <div class="settings-header">
+        <button id="btn-entarea-edit-close" class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+        <h2 id="entarea-edit-title">Edit</h2>
+        <button id="btn-entarea-save" class="btn btn-primary" style="margin-left:auto; padding:8px 16px">Save</button>
+      </div>
+
+      <div class="entarea-name-row">
+        <div class="entarea-name-icon"><svg viewBox="0 0 24 24" width="28" height="28"><path d="M21 3H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h6l-2 3v1h10v-1l-2-3h6a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm0 12H3V5h18v10Z"/></svg></div>
+        <input type="text" id="entarea-name-input" placeholder="Area name" />
+      </div>
+
+      <div class="settings-section">
+        <div class="entarea-lights-header">
+          <button id="btn-entarea-lights-back" class="icon-btn" style="display:none">
+            <svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          </button>
+          <div class="settings-title" id="entarea-lights-title" style="margin-bottom:0">Rooms</div>
+        </div>
+        <div id="entarea-lights-list" class="settings-item-list" style="margin-top:10px"></div>
+        <p class="muted small" id="entarea-lights-empty" style="display:none">No entertainment-capable lights found on this Bridge.</p>
+      </div>
+
+      <div class="settings-item-row entarea-placement-row" id="btn-entarea-placement">
+        <div class="settings-item-icon-btn"><svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="5" width="18" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="3"/></svg></div>
+        <div style="flex:1">Light placement</div>
+        <svg viewBox="0 0 24 24" width="18" height="18" style="fill:var(--text-dimmer)"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </div>
+
+      <button id="btn-entarea-delete" class="btn btn-danger" style="display:none">Delete this area</button>
+    </section>
+
+    <!-- LIGHT PLACEMENT VIEW -->
+    <section id="view-light-placement" class="view">
+      <div class="settings-header">
+        <button id="btn-placement-done" class="icon-btn">
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <h2>Light placement</h2>
+      </div>
+
+      <p class="muted small" id="placement-hint" style="text-align:center; margin-top:0">Drag a light to move it &middot; scroll to change height &middot; drag the room to rotate the view</p>
+
+      <div class="room3d-wrap" id="room3d-wrap">
+        <button id="btn-room-undo" class="icon-btn room3d-undo" title="Undo last move" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8Z"/></svg>
+        </button>
+        <button id="btn-room-reset-view" class="icon-btn room3d-reset-view" title="Reset view">
+          <svg viewBox="0 0 24 24"><path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 13c0-4.42-3.58-8-8-8Zm0 13c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 13c0 4.42 3.58 8 8 8v3l4-4-4-4v3Z"/></svg>
+        </button>
+        <div class="room3d-stage">
+          <div class="room3d-back-wall">
+            <div class="room3d-speaker room3d-speaker-left"></div>
+            <div class="room3d-speaker room3d-speaker-right"></div>
+          </div>
+          <div class="room3d-side-wall room3d-side-wall-left"></div>
+          <div class="room3d-side-wall room3d-side-wall-right"></div>
+          <div class="room3d-ceiling"></div>
+          <div class="room3d-floor" id="room3d-floor"></div>
+        </div>
+        <!-- Three stacked layers, not one -- the room shell, the furniture
+             (TV + couch), and the lights each get their own compositing
+             layer, sharing the exact same size/position/camera transform
+             so they overlap pixel-for-pixel, painted in that order (later
+             = on top). This sidesteps the browser's unreliable depth-sort
+             between elements that span a wide range of their own depth --
+             confirmed live three times now: lights hidden behind the
+             floor, the TV hidden behind a side wall once dragged, and then
+             lights hidden behind the TV once *it* moved into the same
+             layer as them. Each pairing needed its own guaranteed-on-top
+             layer rather than trusting 3D sort to pick correctly. -->
+        <div class="room3d-objects-stage" id="room3d-objects-stage">
+          <div class="room3d-tv"></div>
+        </div>
+        <div class="room3d-lights-stage" id="room3d-lights-stage"></div>
+        <!-- Touch has no equivalent of the desktop's mouse-wheel-over-the-
+             ball height adjustment (see renderer.js's room3d-wrap wheel
+             listener) -- this is the Android-only replacement: a plain
+             vertical track/handle, driven by android-ui.js, bound to
+             whichever light is currently selected (renderer.js's
+             setCurrentLight()). Hidden until a light is selected. -->
+        <div class="height-control" id="height-control" hidden>
+          <div class="height-value" id="height-value">50%</div>
+          <div class="height-track" id="height-track"><div class="height-fill" id="height-fill"></div></div>
+          <div class="height-control-label">HEIGHT</div>
+        </div>
+      </div>
+
+      <div id="placement-legend" class="placement-legend"></div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM SHEET (Mode / Intensity / What / Where) -->
+  <div id="sheet-overlay" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-title" id="sheet-title">Mode</div>
+      <div class="sheet-options" id="sheet-options"></div>
+      <div class="sheet-slider-wrap" id="sheet-slider-wrap" style="display:none">
+        <!-- Badge is a sibling of brightness-pill, not a child of it --
+             brightness-pill needs overflow:hidden to clip the fill
+             rectangle to its own rounded shape, which would also clip the
+             badge whenever it floats above the pill's own top edge (at/
+             near 100%) if it lived inside instead. -->
+        <div class="brightness-badge" id="brightness-badge">100%</div>
+        <div class="brightness-pill" id="brightness-pill">
+          <div class="brightness-fill" id="brightness-fill"></div>
+          <div class="brightness-icon" id="brightness-sun-icon"></div>
+        </div>
+        <input type="range" id="sheet-slider" min="0" max="200" />
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM DIALOG (e.g. discard unsaved changes) -->
+  <div id="confirm-overlay" class="sheet-overlay dialog-overlay">
+    <div class="sheet dialog-sheet">
+      <div class="sheet-title" id="confirm-title">Discard changes?</div>
+      <p class="muted small" id="confirm-message" style="text-align:center; margin-top:0"></p>
+      <div style="display:flex; gap:10px; margin-top:16px">
+        <button id="confirm-cancel" class="btn btn-ghost" style="flex:1">Cancel</button>
+        <button id="confirm-ok" class="btn btn-danger" style="flex:1">Discard</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="services.js"></script>
+  <script src="renderer.js"></script>
+  <script src="android-ui.js"></script>
+</body>
+</html>

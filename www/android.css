@@ -1,0 +1,232 @@
+/* Android-only layout/sizing overrides, loaded after the shared style.css
+   (style.css stays byte-for-byte identical to the desktop app -- see
+   index.html's script/link order). style.css was designed for a fixed
+   340x600 desktop window; on a full-width phone screen that needs real
+   layout changes, not just a uniform blow-up.
+
+   A `body { zoom: 1.5 }` blow-up was tried first and reverted: zoom
+   enlarges content but shrinks the *effective* CSS viewport by the same
+   factor (a 1.5x zoom on a ~412px-wide phone leaves only ~275px of usable
+   width), which is *narrower* than several fixed-px things the desktop
+   design assumed ~320-340px for. That's what caused the pairing screen to
+   overflow past the screen edge, the intensity/input picker to fail to
+   fit 4 options across, and the round sync button to get squeezed into an
+   oval by flex-shrink. Sizing things directly against the real, full
+   device width avoids all three structurally instead of patching each
+   symptom. */
+
+/* ---------- General text/icon/tap-target scale-up ---------- */
+
+.titlebar { height: 52px; }
+#app { height: calc(100% - 52px); }
+.titlebar-btn { width: 52px; height: 52px; }
+.titlebar-btn svg { width: 26px; height: 26px; }
+
+/* ---------- Settings gear only makes sense on the home screen ----------
+   The titlebar band (with the gear) sits above #app on every screen; every
+   other view already has its own settings-header (back button + title) as
+   its first thing, so leaving the titlebar in place there just pushes that
+   header down a whole extra row AND leaves a now-pointless gear visible
+   above it. android-ui.js toggles this class on <body> to collapse the
+   titlebar entirely whenever the active view isn't the home screen, so
+   each view's own header sits right at the very top of the screen instead,
+   with no redundant gear above it. */
+body.no-titlebar .titlebar { height: 0; overflow: hidden; }
+body.no-titlebar #app { height: 100%; }
+
+.icon-btn { width: 42px; height: 42px; }
+.icon-btn svg { width: 22px; height: 22px; }
+
+.btn { padding: 14px 22px; font-size: 15px; }
+.small { font-size: 13px; }
+
+.settings-header h2 { font-size: 19px; }
+.settings-title { font-size: 12px; }
+.toggle-btn { font-size: 15px; padding: 14px 16px; }
+
+.pairing-wrap h1 { font-size: 21px; }
+.pairing-item-name { font-size: 15px; }
+.pairing-item-ip { font-size: 13px; }
+.sync-ring { width: 92px; height: 92px; }
+.sync-dot { width: 34px; height: 34px; }
+
+.device-label-name { font-size: 13px; }
+.device-label-status { font-size: 26px; }
+/* Square, not the desktop's pill/oval shape -- flex:1/max-width (the
+   desktop sizing) let these shrink to fit the row; a fixed width/height
+   makes all three the same size regardless of label length, and forces
+   .control-row's own justify-content:center (style.css) to center them as
+   a group instead of stretching them to fill the row. */
+.control-pill {
+  flex: 0 0 auto;
+  width: 122px; height: 122px;
+  padding: 0;
+  border-radius: 26px;
+  max-width: none;
+  /* style.css's own flex-direction:column has no justify-content, so
+     content (label+icon) packed to the top of the now-taller square box
+     instead of sitting centered in it. */
+  justify-content: center;
+}
+.control-pill-label { font-size: 13px; }
+.control-pill-value { font-size: 30px; }
+.control-pill-value svg { width: 32px; height: 32px; }
+/* Same width as .control-pill so WHAT/SYNC/WHERE reads as the same scale
+   of control, not smaller -- height is left to its own content (icon +
+   label + a sub-line the control pills don't have). */
+.bottom-btn { width: 122px; }
+.bottom-btn-label { font-size: 13px; }
+.bottom-btn-sub { font-size: 14px; max-width: 116px; }
+.bottom-btn-icon svg { width: 30px; height: 30px; }
+.input-tile-icon svg { width: 72px; height: 72px; }
+
+/* ---------- Ambient background: current bulb colors while syncing ----------
+   The Sync Box's actual real-time color stream to the Bridge (DTLS
+   Entertainment API, ~25Hz) isn't exposed by its REST API this app already
+   uses, so this can't sample the TV signal directly -- android-ui.js
+   instead polls the Bridge for the currently-targeted lights' own live
+   colors (which IS literally what the Sync Box is driving them to) and
+   sets these as CSS custom properties. Sized larger than the tile
+   (inset:-30%) so the blur's soft edge never shows a hard boundary, and
+   z-index:0 keeps it behind .input-tile-icon (z-index:1, see style.css)
+   and in front of the existing ::before syncing-glow (a pseudo-element,
+   always painted before real children regardless of z-index ties). */
+.input-tile-ambient {
+  position: absolute;
+  inset: -30%;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  filter: blur(40px);
+  background: conic-gradient(
+    from 0deg,
+    var(--ambient-c0, transparent),
+    var(--ambient-c1, var(--ambient-c0, transparent)),
+    var(--ambient-c2, var(--ambient-c0, transparent)),
+    var(--ambient-c3, var(--ambient-c0, transparent)),
+    var(--ambient-c0, transparent)
+  );
+  animation: ambient-spin 16s linear infinite;
+}
+@keyframes ambient-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.sheet-title { font-size: 17px; }
+.sheet-option { font-size: 12px; }
+.sheet-option-icon { font-size: 26px; }
+
+.entarea-name-icon { width: 60px; height: 60px; }
+#entarea-name-input { font-size: 18px; }
+.settings-item-icon-btn { width: 42px; height: 42px; }
+
+/* ---------- Inputs/rows overflowing their container ----------
+   Flex items (an <input> included) default to a content-based min-width
+   that can be wider than the space actually available, which is what let
+   these push past their grey panel/the screen edge instead of shrinking
+   to fit. */
+input[type="text"] { min-width: 0; font-size: 15px; padding: 13px 14px; }
+.row, .entarea-name-row { min-width: 0; }
+.settings-item-row input[type="text"] { min-width: 0; font-size: 14px; }
+
+/* ---------- Use more of the real screen width; less dead space at the
+   top of every screen and around every grey panel ---------- */
+.view { padding: 14px 14px 18px; }
+.settings-header { margin-bottom: 14px; }
+.pairing-wrap { max-width: 94vw; }
+.settings-section { padding: 14px; }
+
+/* ---------- Main control screen: tile/status/pills stay up near the top,
+   WHAT/SYNC/WHERE pinned to the true bottom edge instead of the whole
+   group being centered as one block (which is what `justify-content:
+   center` did -- it also dragged the tile/status text down to mid-screen,
+   not just the bottom bar). Restoring control-row's auto bottom margin
+   (like the desktop layout already relies on, see style.css) makes it
+   absorb all the leftover space itself, which is what actually pushes the
+   bottom bar all the way down while leaving flex-start's default top
+   alignment for everything above it untouched. */
+#view-main {
+  justify-content: flex-start;
+  padding-top: 10px;
+  padding-bottom: 14px;
+}
+#view-main .input-tile { width: 260px; height: 260px; margin: 0 auto 18px; }
+#view-main .device-label { margin-bottom: 18px; }
+#view-main .control-row { margin-bottom: auto; }
+
+/* ---------- Round sync button no longer round: the bottom bar's flex
+   row let it shrink (default flex-shrink:1) when it ran out of width,
+   squeezing its width while its height stayed fixed at 62px, i.e. an
+   oval. Locking flex-shrink to 0 on the fixed-size children keeps them
+   the exact square/circle they're defined as no matter how tight the
+   row gets. ---------- */
+.bottom-bar { padding: 16px 20px; }
+.bottom-btn { flex-shrink: 0; }
+.sync-fab { flex-shrink: 0; width: 86px; height: 86px; }
+.sync-fab svg { width: 32px; height: 32px; }
+
+/* ---------- Sheet option grid: always exactly 4 across ----------
+   Was a fixed 64px square; on a real (un-zoomed) phone width that's too
+   small relative to the rest of the enlarged UI, but the fixed-64px
+   version wasn't reliably fitting 4 per row either once the zoom hack was
+   shrinking the effective viewport. Sizing each square as a quarter of
+   the actual available row width (100% minus the 3 inter-item gaps) fits
+   exactly 4 across at any real device width, so it also just applies
+   consistently to the Mode/Where/icon-picker grids. */
+.sheet-options { gap: 12px; }
+.sheet-option {
+  flex: 0 0 calc((100% - 36px) / 4);
+  width: calc((100% - 36px) / 4);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  padding: 6px;
+}
+
+/* Brightness pill (badge/fill/icon/popover-grow) moved into the shared
+   style.css 2026-09-20 -- it turned out not to be touch-specific at all
+   (pointer events drive it, which fire for mouse too), so it's now a
+   desktop+Android feature kept identical across both, not an Android-only
+   override. See style.css for the actual rules. */
+
+/* ---------- Light placement: touch-friendly height control ----------
+   See index.html's comment -- android-ui.js drives this from touch,
+   calling straight into renderer.js's includedLights()/lightHeightPx()
+   rather than duplicating its position model. */
+.height-control {
+  position: absolute;
+  top: 60px; bottom: 16px; right: 8px;
+  width: 84px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  z-index: 2;
+  touch-action: none;
+}
+/* [hidden] and .height-control both have one-class specificity, so without
+   this the browser's own built-in "[hidden] { display: none }" rule loses
+   the tie to the rule above just by coming later in the cascade (author
+   styles always beat the UA stylesheet at equal specificity) -- android-
+   ui.js's `control.hidden = true/false` was always toggling the attribute
+   correctly, it just never had any visible effect at all, which is what
+   made this look stuck showing regardless of selection state. */
+.height-control[hidden] { display: none; }
+.height-value {
+  font-size: 13px; font-weight: 700; color: var(--text);
+  background: rgba(0,0,0,0.4); border-radius: 10px; padding: 4px 9px;
+  flex-shrink: 0; white-space: nowrap;
+}
+.height-track {
+  position: relative;
+  flex: 1; width: 60px;
+  background: rgba(0,0,0,0.35);
+  border-radius: 28px;
+  overflow: hidden;
+}
+.height-control-label {
+  font-size: 10px; letter-spacing: 0.06em; color: var(--text-dim);
+  flex-shrink: 0;
+}
+.height-fill {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 50%;
+  background: var(--accent-grad);
+}

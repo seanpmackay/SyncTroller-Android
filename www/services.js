@@ -218,13 +218,6 @@ const huebridge = {
         name: l.metadata.name,
       }));
   },
-  // Current live state of one light (on/off, color, brightness) -- used
-  // for the main screen's ambient background (see android-ui.js), not
-  // anywhere in the shared entertainment-area flows above.
-  async getLightState(host, appKey, lightId) {
-    const results = await bridgeV2Request(host, appKey, `/light/${lightId}`);
-    return results[0] || null;
-  },
   // Briefly makes the physical bulb blink/breathe via the Bridge's own
   // identify effect (a single call only does one short breathe cycle, so
   // this fires it 5 times with a gap between each) -- lets renderer.js
@@ -451,10 +444,6 @@ window.hueSync = {
   identifyLight: async (ip, lightId) => {
     const bridge = findBridge(ip);
     return huebridge.identifyLight(bridge.ip, bridge.username, lightId);
-  },
-  getLightColor: async (ip, lightId) => {
-    const bridge = findBridge(ip);
-    return huebridge.getLightState(bridge.ip, bridge.username, lightId);
   },
   getBridgeRooms: async (ip) => {
     const bridge = findBridge(ip);

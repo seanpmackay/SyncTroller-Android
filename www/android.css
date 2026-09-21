@@ -80,39 +80,6 @@ body.no-titlebar #app { height: 100%; }
 .bottom-btn-icon svg { width: 30px; height: 30px; }
 .input-tile-icon svg { width: 72px; height: 72px; }
 
-/* ---------- Ambient background: current bulb colors while syncing ----------
-   The Sync Box's actual real-time color stream to the Bridge (DTLS
-   Entertainment API, ~25Hz) isn't exposed by its REST API this app already
-   uses, so this can't sample the TV signal directly -- android-ui.js
-   instead polls the Bridge for the currently-targeted lights' own live
-   colors (which IS literally what the Sync Box is driving them to) and
-   sets these as CSS custom properties. Sized larger than the tile
-   (inset:-30%) so the blur's soft edge never shows a hard boundary, and
-   z-index:0 keeps it behind .input-tile-icon (z-index:1, see style.css)
-   and in front of the existing ::before syncing-glow (a pseudo-element,
-   always painted before real children regardless of z-index ties). */
-.input-tile-ambient {
-  position: absolute;
-  inset: -30%;
-  z-index: 0;
-  opacity: 0;
-  transition: opacity 0.6s ease;
-  filter: blur(40px);
-  background: conic-gradient(
-    from 0deg,
-    var(--ambient-c0, transparent),
-    var(--ambient-c1, var(--ambient-c0, transparent)),
-    var(--ambient-c2, var(--ambient-c0, transparent)),
-    var(--ambient-c3, var(--ambient-c0, transparent)),
-    var(--ambient-c0, transparent)
-  );
-  animation: ambient-spin 16s linear infinite;
-}
-@keyframes ambient-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 .sheet-title { font-size: 17px; }
 .sheet-option { font-size: 12px; }
 .sheet-option-icon { font-size: 26px; }

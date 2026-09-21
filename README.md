@@ -23,7 +23,7 @@ npx cap sync android
 cd android && ./gradlew assembleDebug     # or bundleRelease for the Play Store
 ```
 
-Requires JDK 17.
+Requires JDK 21 (`jdk21-openjdk` on Arch; the npm scripts set `JAVA_HOME` for it).
 
 ## License
 

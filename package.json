@@ -4,13 +4,14 @@
   "private": true,
   "scripts": {
     "sync": "cap sync android",
-    "build-apk": "cd android && ./gradlew assembleDebug"
+    "build-apk": "cd android && JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew assembleDebug",
+    "build-aab": "cd android && JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew bundleRelease"
   },
   "dependencies": {
-    "@capacitor/android": "^6.1.2",
-    "@capacitor/core": "^6.1.2"
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.1.2"
+    "@capacitor/cli": "^8.0.0"
   }
 }

@@ -43,6 +43,29 @@ public class SyncStatusService extends Service {
     return START_STICKY;
   }
 
+  /**
+   * Android 15+ caps dataSync foreground services at 6 hours per day and
+   * calls this when the budget is spent; the app crashes with a
+   * RemoteServiceException a few seconds later if the service is still
+   * running. Drop to a normal (dismissible) notification instead of just
+   * disappearing, so "tap to reopen" keeps working until the app next runs.
+   */
+  @Override
+  public void onTimeout(int startId, int fgsType) {
+    NotificationManager mgr = getSystemService(NotificationManager.class);
+    Notification n = new NotificationCompat.Builder(this, CHANNEL_ID)
+      .setSmallIcon(R.drawable.ic_notification)
+      .setContentTitle("SyncTroller")
+      .setContentText("Tap to reopen")
+      .setContentIntent(buildNotification("", "").contentIntent)
+      .setOnlyAlertOnce(true)
+      .setPriority(NotificationCompat.PRIORITY_LOW)
+      .build();
+    stopForeground(STOP_FOREGROUND_REMOVE);
+    stopSelf();
+    mgr.notify(NOTIFICATION_ID, n);
+  }
+
   private void createChannel() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       NotificationManager mgr = getSystemService(NotificationManager.class);

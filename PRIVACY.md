@@ -17,5 +17,5 @@ SyncTroller does not collect, store, transmit or share any personal data.
   foreground-service permissions are used to show sync status while the box
   is syncing.
 
-Questions: open an issue at
+Questions: email roodlesoft@gmail.com or open an issue at
 https://github.com/seanpmackay/SyncTroller-Android/issues.

@@ -41,6 +41,8 @@ Tools (or "House & Home")
 
 ## Contact / links
 - Privacy policy: https://github.com/seanpmackay/SyncTroller-Android/blob/main/PRIVACY.md
+- Developer name (Console → Account details → Developer name): **RoodleSoft**
+- Developer email (public): roodlesoft@gmail.com (forwards to your main inbox)
 - Website (optional): https://github.com/seanpmackay/SyncTroller-Android
 
 ## Console questionnaires

@@ -35,15 +35,6 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
-        <!-- Keeps a persistent "SyncTroller / Ready" (or "Syncing active")
-             notification up while paired, so the app can be reopened from
-             the notification shade without hunting for it in the app
-             drawer. Meant to behave like a media-player notification,
-             always available while the app is running. -->
-        <service
-            android:name=".SyncStatusService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
     </application>
 
     <!-- Permissions -->
@@ -57,6 +48,4 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- For the persistent "tap to reopen" status notification. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 </manifest>

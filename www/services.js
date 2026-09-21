@@ -19,7 +19,7 @@
 //    (Android's native NsdManager API), the same underlying protocol
 //    avahi-browse uses on desktop, just a different API to reach it.
 
-// ---- Status notification (foreground service) ----
+// ---- Status notification (plain ongoing notification, no service) ----
 //
 // Lets the app be reopened from the notification shade the way a
 // media-player app can, without hunting through the app drawer/recents.
@@ -27,6 +27,9 @@
 // while still paired), kept up to date with "Standby" vs "Syncing"
 // via notifySyncStateChanged below (called by renderer.js only when
 // syncActive actually changes), and torn down when the box is forgotten.
+// Not a foreground service: Play rejects FGS declarations whose only job
+// is keeping a notification up, so on Android 14+ it can be swiped away
+// (it returns on the next launch).
 async function showStatusNotification(text) {
   try {
     await window.Capacitor.Plugins.SyncNotification.show({ title: 'SyncTroller', text });
